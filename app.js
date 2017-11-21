@@ -1,5 +1,6 @@
 const os = require('os');
 const electron = require('electron');
+var path = require('path');
 const app = electron.app;
 const BrowserWindow = electron.BrowserWindow;
 const Menu = electron.Menu;
@@ -7,6 +8,10 @@ const Tray = electron.Tray;
 
 var mainWindow = null;
 var tray = null;
+// ./app/images/appIcon.png
+var trayIcon = path.join(__dirname, 'app/images', 'appIcon.png');
+var appIcon=trayIcon;
+var isQuitting=false;
 
 app.on('window-all-closed', function () {
     app.quit();
@@ -21,8 +26,25 @@ app.on('ready', function () {
         minHeight: 400,
         webPreferences: {
             nodeIntegration: false
-        }
+        },
+        icon:appIcon
     });
+    tray = new Tray(trayIcon);
+	var contextMenu = Menu.buildFromTemplate([
+	  { label: 'Show', click: function() {
+        mainWindow.show();
+        mainWindow.focus();
+       } },
+	  { label: 'Quit', click: function() { isQuitting=true;app.quit(); } }
+	]);
+	tray.setToolTip("Aria2Ng");
+	tray.setContextMenu(contextMenu);
+  
+	tray.on('click', () => {
+        mainWindow.show();
+        mainWindow.focus();
+    }
+);
 
     if ( os.platform() == 'darwin' ){
          let template = [{
@@ -50,7 +72,11 @@ app.on('ready', function () {
     mainWindow.setMenu(null);
     mainWindow.loadURL('file://' + __dirname + '/app/index.html');
 
-    mainWindow.on('closed', function () {
-        mainWindow = null;
+    mainWindow.on('close', e => {
+         if (!isQuitting) {
+            e.preventDefault();
+            mainWindow.hide();
+           }
+        //mainWindow = null;
     });
 });
